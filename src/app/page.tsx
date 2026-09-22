@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { autenticarUsuario, obterUsuarioAutenticado, useAutenticacaoUsuario } from "@/lib/autenticacao";
 import { solicitarApi } from "@/lib/api";
@@ -9,12 +10,15 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  KeyRound,
   LogIn,
   MessageSquare,
   Star,
+  Users,
   X,
 } from "lucide-react";
 import { AlternadorTema } from "@/components/AlternadorTema";
+import { ImagemRefeicao } from "@/components/ImagemRefeicao";
 
 type Refeicao = {
   id: number;
@@ -22,6 +26,7 @@ type Refeicao = {
   horarioServico: string;
   nome: string;
   descricao: string;
+  imagemUrl?: string | null;
 };
 
 type Cardapio = { data: string; ehDiaLetivo: boolean; refeicoes: Refeicao[] };
@@ -30,14 +35,11 @@ function rotuloPeriodo(periodo: Refeicao["periodo"]) {
   return { manha: "Lanche da manhã", almoco: "Almoço", tarde: "Lanche da tarde" }[periodo];
 }
 
-function obterDisponibilidadeRefeicoes(horario: Date) {
-  const minutos = horario.getHours() * 60 + horario.getMinutes();
+function refeicaoJaServida(data: string, horarioServico: string, agora: Date) {
+  if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data) || !/^\d{2}:\d{2}/.test(horarioServico)) return false;
 
-  return {
-    manha: minutos >= 10 * 60,
-    almoco: minutos >= 12 * 60,
-    tarde: minutos >= 15 * 60,
-  };
+  const horarioDaRefeicao = new Date(`${data}T${horarioServico.slice(0, 5)}:00`);
+  return !Number.isNaN(horarioDaRefeicao.getTime()) && agora >= horarioDaRefeicao;
 }
 
 function formatarData(data: Date) {
@@ -66,6 +68,7 @@ export default function PaginaInicial() {
   const router = useRouter();
   const [agora, definirAgora] = useState<Date | null>(null);
   const [formularioAcessoAberto, definirFormularioAcessoAberto] = useState(false);
+  const [formularioRecuperacaoAberto, definirFormularioRecuperacaoAberto] = useState(false);
   const [abaCardapio, definirAbaCardapio] = useState<"hoje" | "proximo">("hoje");
   const [proximoCardapio, definirProximoCardapio] = useState<Cardapio | null>(null);
   const [refeicaoEmAvaliacao, definirRefeicaoEmAvaliacao] = useState<Refeicao | null>(null);
@@ -75,6 +78,9 @@ export default function PaginaInicial() {
   const podeAvaliar = estaAutenticado === true && usuarioAtual?.tipo === "aluno";
   const [erroAcesso, definirErroAcesso] = useState("");
   const [enviandoAcesso, definirEnviandoAcesso] = useState(false);
+  const [erroRecuperacao, definirErroRecuperacao] = useState("");
+  const [mensagemRecuperacao, definirMensagemRecuperacao] = useState("");
+  const [enviandoRecuperacao, definirEnviandoRecuperacao] = useState(false);
   const [nota, definirNota] = useState(0);
   const [avaliacaoEnviada, definirAvaliacaoEnviada] = useState(false);
   const [enviandoAvaliacao, definirEnviandoAvaliacao] = useState(false);
@@ -88,6 +94,13 @@ export default function PaginaInicial() {
   }, []);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("entrar") === "1") {
+      const abertura = window.setTimeout(() => definirFormularioAcessoAberto(true), 0);
+      return () => window.clearTimeout(abertura);
+    }
+  }, []);
+
+  useEffect(() => {
     solicitarApi<Cardapio>("/api/cardapios/hoje")
       .then(definirCardapio)
       .catch(() => definirCardapio({ data: "", ehDiaLetivo: false, refeicoes: [] }));
@@ -96,9 +109,6 @@ export default function PaginaInicial() {
       .catch(() => definirProximoCardapio({ data: "", ehDiaLetivo: false, refeicoes: [] }));
   }, []);
 
-  const disponibilidade = agora
-    ? obterDisponibilidadeRefeicoes(agora)
-    : { manha: true, almoco: true, tarde: true };
   function mostrarProximoCardapio() {
     definirAbaCardapio("proximo");
     window.requestAnimationFrame(() => {
@@ -138,6 +148,33 @@ export default function PaginaInicial() {
     }
   }
 
+  async function solicitarRecuperacao(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const elementoFormulario = event.currentTarget;
+    const dados = new FormData(elementoFormulario);
+    const novaSenha = String(dados.get("novaSenha") ?? "");
+    const confirmarSenha = String(dados.get("confirmarSenha") ?? "");
+    definirErroRecuperacao("");
+    definirMensagemRecuperacao("");
+    if (novaSenha !== confirmarSenha) {
+      definirErroRecuperacao("As senhas informadas não coincidem.");
+      return;
+    }
+    definirEnviandoRecuperacao(true);
+    try {
+      const resultado = await solicitarApi<{ mensagem: string }>("/api/autenticacao/recuperar-senha", {
+        method: "POST",
+        body: JSON.stringify({ cpf: String(dados.get("cpf") ?? ""), novaSenha }),
+      });
+      definirMensagemRecuperacao(resultado.mensagem);
+      elementoFormulario.reset();
+    } catch (erro) {
+      definirErroRecuperacao(erro instanceof Error ? erro.message : "Não foi possível solicitar a recuperação.");
+    } finally {
+      definirEnviandoRecuperacao(false);
+    }
+  }
+
   function aplicarMascaraCpf(event: FormEvent<HTMLInputElement>) {
     event.currentTarget.value = formatarCpf(event.currentTarget.value);
   }
@@ -170,26 +207,27 @@ export default function PaginaInicial() {
   return (
     <main className="flex min-h-screen flex-col bg-fundo text-texto-principal">
       <header className="border-b border-borda bg-header">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <a href="" className="flex min-w-0 items-center gap-3" aria-label="Sabor Sync, início">
-            <Image src="/logo.jpg" alt="Logomarca Sabor Sync" width={64} height={64} priority className="size-14 shrink-0 border border-borda object-cover" />
+        <div className="mx-auto flex w-full flex-col items-stretch gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-8 lg:max-w-7xl">
+          <Link href="/" className="flex min-w-0 items-center justify-center gap-3 sm:justify-start" aria-label="Sabor Sync, início">
+            <Image src="/logo.png" alt="Logomarca Sabor Sync" width={64} height={64} priority className="rounded-full size-14 shrink-0 border border-borda object-cover" />
             <span className="min-w-0 leading-tight">
               <strong className="block text-sm tracking-wide text-texto-principal">SABOR SYNC</strong>
               <span className="block truncate text-xs text-secundaria font-medium">Cardápio ETE</span>
             </span>
-          </a>
+          </Link>
 
-          <nav className="flex items-center gap-2" aria-label="Navegação principal">
-
+          <nav className="flex flex-wrap items-center justify-center gap-1 sm:flex-nowrap sm:justify-start sm:gap-2" aria-label="Navegação principal">
+            
             <button
               type="button"
               onClick={mostrarProximoCardapio}
-              className="inline-flex items-center gap-2 bg-primaria px-3 py-2 text-xs font-bold text-primaria-texto shadow-md shadow-black/10 transition hover:bg-primaria-hover sm:px-4 sm:text-sm"
+              className="inline-flex items-center justify-center gap-2 bg-primaria px-1 py-2 text-xs font-bold text-primaria-texto shadow-md shadow-black/10 transition hover:bg-primaria-hover sm:px-4 sm:text-sm"
             >
               <CalendarDays size={17} aria-hidden="true" />
               <span className="hidden sm:inline">Ver próximo cardápio</span>
               <span className="sm:hidden">Próximo</span>
             </button>
+            <Link href="/equipe" className="inline-flex items-center justify-center gap-2 border border-borda bg-superficie px-1 py-2 text-xs font-bold text-texto-principal transition hover:bg-borda/30 sm:px-3 sm:text-sm"><Users size={17} aria-hidden="true" /><span className="hidden sm:inline">Nossa equipe</span><span className="sm:hidden">Equipe</span></Link>
             <button
               type="button"
               onClick={() => {
@@ -200,7 +238,7 @@ export default function PaginaInicial() {
 
                 definirFormularioAcessoAberto(true);
               }}
-              className="inline-flex items-center gap-2 border border-borda bg-superficie px-3 py-2 text-xs font-bold text-texto-principal transition hover:bg-borda/30 sm:text-sm"
+              className="inline-flex items-center justify-center gap-2 border border-borda bg-superficie px-1 py-2 text-xs font-bold text-texto-principal transition hover:bg-borda/30 sm:px-3 sm:text-sm"
               aria-label={estaAutenticado ? "Usuário identificado" : "Identificar usuário"}
               title={estaAutenticado ? "Usuário identificado" : "Identificar usuário"}
             >
@@ -213,7 +251,7 @@ export default function PaginaInicial() {
       </header>
 
       <section id="inicio" className="border-b border-borda bg-superficie">
-        <div className="mx-auto grid max-w-7xl gap-7 px-5 py-10 sm:px-8 md:grid-cols-[1fr_auto] md:items-end md:py-14">
+        <div className="mx-auto grid w-full gap-7 px-5 py-10 sm:px-8 md:grid-cols-[1fr_auto] md:items-end md:py-14 lg:max-w-7xl">
           <div>
             <p className="mb-3 text-xs font-bold tracking-[0.18em] text-secundaria">REFEIÇÕES DE HOJE</p>
             <h1 className="max-w-2xl text-3xl font-semibold text-texto-principal sm:text-4xl">Cardápio simples e sempre à vista.</h1>
@@ -226,7 +264,7 @@ export default function PaginaInicial() {
         </div>
       </section>
 
-      <section id="cardapios" className="mx-auto w-full max-w-7xl scroll-mt-4 px-5 py-8 sm:px-8 sm:py-12" aria-labelledby="refeicoes-title">
+      <section id="cardapios" className="mx-auto w-full scroll-mt-4 px-5 py-8 sm:px-8 sm:py-12 lg:max-w-7xl" aria-labelledby="refeicoes-title">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold tracking-[0.16em] text-secundaria">PROGRAMAÇÃO</p>
@@ -245,11 +283,16 @@ export default function PaginaInicial() {
           </div>
           <div className="grid gap-px overflow-hidden border border-borda bg-borda md:grid-cols-3">
             {(abaCardapio === "hoje" ? cardapio : proximoCardapio)?.refeicoes.map((refeicao) => {
-              const estaDisponivel = abaCardapio === "proximo" || disponibilidade[refeicao.periodo];
-              return <article key={refeicao.id} className={`flex min-h-72 flex-col bg-superficie p-6 transition-opacity duration-300 ${!estaDisponivel ? "opacity-45" : ""}`}>
-                <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[0.15em] text-secundaria">{refeicao.horarioServico.replace(":", "h")}</p><h4 className="mt-2 text-xl font-semibold text-texto-principal">{refeicao.nome}</h4><p className="mt-1 text-xs text-texto-secundario">{rotuloPeriodo(refeicao.periodo)}</p></div><Clock3 size={20} className="text-texto-secundario" aria-hidden="true" /></div>
-                <p className="mt-4 text-sm leading-6 text-texto-secundario">{refeicao.descricao}</p>
-                {abaCardapio === "hoje" && <div className="mt-auto pt-7">{estaDisponivel ? <button type="button" onClick={() => abrirAvaliacao(refeicao)} className="inline-flex items-center gap-2 text-sm font-semibold text-secundaria transition hover:underline"><MessageSquare size={17} aria-hidden="true" />Avaliar refeição</button> : <span className="text-xs font-semibold tracking-wide text-texto-secundario">AVALIAÇÃO DISPONÍVEL APÓS {refeicao.horarioServico.replace(":", "H")}</span>}</div>}
+              const dataCardapio = abaCardapio === "hoje" ? cardapio?.data : proximoCardapio?.data;
+              const jaFoiServida = Boolean(agora && dataCardapio && refeicaoJaServida(dataCardapio, refeicao.horarioServico, agora));
+              const estaDisponivel = abaCardapio === "hoje" && jaFoiServida;
+              return <article key={refeicao.id} className={`flex min-h-72 flex-col bg-superficie transition-opacity duration-300 ${jaFoiServida ? "opacity-45" : ""}`}>
+                <ImagemRefeicao src={refeicao.imagemUrl} nome={refeicao.nome} className="aspect-video w-full" />
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[0.15em] text-secundaria">{refeicao.horarioServico.replace(":", "h")}</p><h4 className="mt-2 text-xl font-semibold text-texto-principal">{refeicao.nome}</h4><p className="mt-1 text-xs text-texto-secundario">{rotuloPeriodo(refeicao.periodo)}</p></div><Clock3 size={20} className="text-texto-secundario" aria-hidden="true" /></div>
+                  <p className="mt-4 text-sm leading-6 text-texto-secundario">{refeicao.descricao}</p>
+                  {abaCardapio === "hoje" && <div className="mt-auto pt-7">{estaDisponivel ? <button type="button" onClick={() => abrirAvaliacao(refeicao)} className="inline-flex items-center gap-2 text-sm font-semibold text-secundaria transition hover:underline"><MessageSquare size={17} aria-hidden="true" />Avaliar refeição</button> : <span className="text-xs font-semibold tracking-wide text-texto-secundario">AVALIAÇÃO DISPONÍVEL APÓS {refeicao.horarioServico.replace(":", "H")}</span>}</div>}
+                </div>
               </article>;
             })}
             {abaCardapio === "hoje" && cardapio && cardapio.refeicoes.length === 0 && <p className="bg-superficie p-6 text-sm text-texto-secundario md:col-span-3">Nenhuma refeição cadastrada para hoje.</p>}
@@ -259,10 +302,14 @@ export default function PaginaInicial() {
       </section>
 
       <footer className="mt-auto border-t border-borda bg-superficie">
-        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+        <div className="mx-auto flex w-full flex-col gap-5 px-5 py-8 sm:px-8 md:flex-row md:items-end md:justify-between lg:max-w-7xl">
           <div>
             <p className="text-sm font-semibold text-texto-principal">Sua opinião ajuda a melhorar o cardápio.</p>
             <p className="mt-1 text-sm text-texto-secundario">Use o menu no cabeçalho para se identificar antes de avaliar uma refeição.</p>
+          </div>
+          <div className="border-t border-borda pt-4 text-xs leading-5 text-texto-secundario md:border-l md:border-t-0 md:pl-5 md:pt-0 md:text-right">
+            <p>© 2026 Sabor Sync. Todos os direitos reservados.</p>
+            <p>Sistema criado em 28 de julho de 2026.</p>
           </div>
         </div>
       </footer>
@@ -280,6 +327,28 @@ export default function PaginaInicial() {
             <input id="senha" name="senha" maxLength={20} type="password" required placeholder="Sua senha" className="mt-2 w-full border border-borda bg-input-bg px-3 py-3 text-texto-principal outline-none placeholder:text-input-placeholder focus:border-primaria" />
             {erroAcesso && <p className="mt-3 text-sm text-erro font-medium" role="alert">{erroAcesso}</p>}
             <button disabled={enviandoAcesso} type="submit" className="mt-6 inline-flex w-full items-center justify-center gap-2 bg-primaria px-4 py-3 text-sm font-bold text-primaria-texto hover:bg-primaria-hover disabled:cursor-wait disabled:opacity-60"><LogIn size={18} />{enviandoAcesso ? "Entrando..." : "Entrar"}</button>
+            <button type="button" onClick={() => { definirFormularioAcessoAberto(false); definirFormularioRecuperacaoAberto(true); definirErroRecuperacao(""); definirMensagemRecuperacao(""); }} className="mt-4 inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-secundaria hover:underline"><KeyRound size={17} />Esqueci minha senha</button>
+          </form>
+        </div>
+      )}
+
+      {formularioRecuperacaoAberto && (
+        <div onClick={() => definirFormularioRecuperacaoAberto(false)} className="fixed inset-0 z-20 grid place-items-center overflow-y-auto bg-black/60 p-5" role="dialog" aria-modal="true" aria-labelledby="recuperacao-title">
+          <form onClick={(event) => event.stopPropagation()} onSubmit={solicitarRecuperacao} className="relative my-auto w-full max-w-md border border-borda bg-superficie p-6 shadow-2xl">
+            <button type="button" onClick={() => definirFormularioRecuperacaoAberto(false)} className="absolute right-4 top-4 grid size-9 place-items-center text-texto-secundario hover:text-texto-principal" aria-label="Fechar recuperação de senha"><X size={20} /></button>
+            <p className="text-xs font-bold tracking-[0.16em] text-secundaria">RECUPERAÇÃO DE SENHA</p>
+            <h2 id="recuperacao-title" className="mt-2 text-2xl font-semibold text-texto-principal">Solicitar nova senha</h2>
+            <p className="mt-2 text-sm leading-6 text-texto-secundario">A nova senha somente será ativada depois da aprovação de um administrador.</p>
+            <label className="mt-6 block text-sm font-medium text-texto-principal" htmlFor="cpf-recuperacao">CPF</label>
+            <input id="cpf-recuperacao" name="cpf" required inputMode="numeric" maxLength={14} onInput={aplicarMascaraCpf} placeholder="000.000.000-00" className="mt-2 w-full border border-borda bg-input-bg px-3 py-3 text-texto-principal outline-none placeholder:text-input-placeholder focus:border-primaria" />
+            <label className="mt-4 block text-sm font-medium text-texto-principal" htmlFor="nova-senha">Nova senha</label>
+            <input id="nova-senha" name="novaSenha" type="password" required minLength={6} maxLength={72} autoComplete="new-password" className="mt-2 w-full border border-borda bg-input-bg px-3 py-3 text-texto-principal outline-none focus:border-primaria" />
+            <label className="mt-4 block text-sm font-medium text-texto-principal" htmlFor="confirmar-senha">Confirmar nova senha</label>
+            <input id="confirmar-senha" name="confirmarSenha" type="password" required minLength={6} maxLength={72} autoComplete="new-password" className="mt-2 w-full border border-borda bg-input-bg px-3 py-3 text-texto-principal outline-none focus:border-primaria" />
+            {erroRecuperacao && <p className="mt-4 text-sm font-medium text-erro" role="alert">{erroRecuperacao}</p>}
+            {mensagemRecuperacao && <p className="mt-4 text-sm font-medium text-sucesso" role="status">{mensagemRecuperacao}</p>}
+            <button disabled={enviandoRecuperacao || Boolean(mensagemRecuperacao)} type="submit" className="mt-6 inline-flex w-full items-center justify-center gap-2 bg-primaria px-4 py-3 text-sm font-bold text-primaria-texto hover:bg-primaria-hover disabled:cursor-wait disabled:opacity-60"><KeyRound size={18} />{enviandoRecuperacao ? "Enviando..." : "Solicitar aprovação"}</button>
+            <button type="button" onClick={() => { definirFormularioRecuperacaoAberto(false); definirFormularioAcessoAberto(true); }} className="mt-4 w-full text-sm font-semibold text-secundaria hover:underline">Voltar para entrar</button>
           </form>
         </div>
       )}

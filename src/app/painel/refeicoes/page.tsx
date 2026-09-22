@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, LogOut, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { AlternadorTema } from "@/components/AlternadorTema";
+import { ImagemRefeicao } from "@/components/ImagemRefeicao";
 import { solicitarApi } from "@/lib/api";
 import { encerrarSessaoUsuario, obterUsuarioAutenticado, useAutenticacaoUsuario } from "@/lib/autenticacao";
+import { normalizarUrlImagem } from "@/lib/imagem";
 
 type PeriodoRefeicao = "manha" | "almoco" | "tarde";
 
@@ -18,6 +20,7 @@ type Refeicao = {
   nome: string;
   horarioServico: string;
   descricao: string;
+  imagemUrl?: string | null;
 };
 
 type FormularioRefeicao = Omit<Refeicao, "id" | "horarioServico">;
@@ -49,6 +52,7 @@ function formularioVazio(data = dataHoje()): FormularioRefeicao {
     periodo: "manha",
     nome: "",
     descricao: "",
+    imagemUrl: "",
   };
 }
 
@@ -128,6 +132,7 @@ export default function PaginaGestaoRefeicoes() {
       periodo: refeicao.periodo,
       nome: refeicao.nome || rotuloPeriodo(refeicao.periodo),
       descricao: refeicao.descricao,
+      imagemUrl: refeicao.imagemUrl ?? "",
     });
     definirMensagem("");
     definirErro("");
@@ -156,6 +161,7 @@ export default function PaginaGestaoRefeicoes() {
       periodo: formulario.periodo,
       nome: formulario.nome.trim(),
       descricao: formulario.descricao.trim(),
+      imagemUrl: normalizarUrlImagem(formulario.imagemUrl),
     };
 
     try {
@@ -212,9 +218,9 @@ export default function PaginaGestaoRefeicoes() {
   return (
     <main className="min-h-screen bg-fundo text-texto-principal">
       <header className="border-b border-borda bg-header">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex w-full items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:max-w-7xl">
           <Link href="/painel" className="flex items-center gap-3" aria-label="Voltar ao painel">
-            <Image src="/logo.jpg" alt="Logomarca Sabor Sync" width={56} height={56} priority className="size-14 border border-borda object-cover" />
+            <Image src="/logo.png" alt="Logomarca Sabor Sync" width={56} height={56} priority className="size-14 rounded-full border border-borda object-cover" />
             <span><strong className="block text-sm tracking-wide text-texto-principal">SABOR SYNC</strong><span className="text-xs text-secundaria font-medium">Gestão de refeições</span></span>
           </Link>
           <div className="flex items-center gap-2">
@@ -226,14 +232,14 @@ export default function PaginaGestaoRefeicoes() {
       </header>
 
       <section className="border-b border-borda bg-superficie">
-        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+        <div className="mx-auto w-full px-5 py-8 sm:px-8 lg:max-w-7xl">
           <p className="text-xs font-bold tracking-[0.18em] text-secundaria">ADMINISTRAÇÃO</p>
           <h1 className="mt-2 text-3xl font-semibold text-texto-principal">Gestão das refeições</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-texto-secundario">Programe, edite e exclua refeições para datas específicas.</p>
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <div className="mx-auto w-full px-5 py-8 sm:px-8 lg:max-w-7xl">
         <section aria-labelledby="lista-title">
           <div>
             <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold tracking-[0.16em] text-secundaria">PROGRAMAÇÃO</p><h2 id="lista-title" className="mt-2 text-xl font-semibold text-texto-principal">Refeições cadastradas</h2></div><button type="button" onClick={abrirCadastro} className="inline-flex items-center gap-2 bg-primaria px-4 py-3 text-sm font-bold text-primaria-texto hover:bg-primaria-hover"><Plus size={18} />Nova refeição</button></div>
@@ -250,9 +256,10 @@ export default function PaginaGestaoRefeicoes() {
             {estaCarregando && <p className="border border-borda bg-superficie p-5 text-sm text-texto-secundario">Carregando refeições...</p>}
             {!estaCarregando && refeicoes.length === 0 && <p className="border border-borda bg-superficie p-5 text-sm text-texto-secundario">Nenhuma refeição encontrada.</p>}
             {!estaCarregando && refeicoes.length > 0 && <div className="overflow-x-auto border border-borda bg-superficie">
-              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-                <thead className="bg-fundo text-xs uppercase tracking-wide text-texto-secundario"><tr><th className="px-4 py-3">Data</th><th className="px-4 py-3">Período</th><th className="px-4 py-3">Nome</th><th className="px-4 py-3">Descrição</th><th className="px-4 py-3 text-right">Ações</th></tr></thead>
+              <table className="w-full min-w-[840px] border-collapse text-left text-sm">
+                <thead className="bg-fundo text-xs uppercase tracking-wide text-texto-secundario"><tr><th className="px-4 py-3">Imagem</th><th className="px-4 py-3">Data</th><th className="px-4 py-3">Período</th><th className="px-4 py-3">Nome</th><th className="px-4 py-3">Descrição</th><th className="px-4 py-3 text-right">Ações</th></tr></thead>
                 <tbody className="divide-y divide-borda">{refeicoes.map((refeicao) => <tr key={refeicao.id} className={idEmExclusao === refeicao.id ? "bg-erro/15" : dataJaPassou(refeicao.data) ? "bg-texto-secundario/20 hover:bg-texto-secundario/15" : "hover:bg-borda/20"}>
+                  <td className="px-4 py-3"><ImagemRefeicao src={refeicao.imagemUrl} nome={refeicao.nome} className="h-12 w-16 border border-borda" /></td>
                   <td className="whitespace-nowrap px-4 py-4"><strong className="block text-texto-principal">{dataBr(refeicao.data)}</strong><span className="text-xs text-secundaria">{refeicao.horarioServico}</span>{dataJaPassou(refeicao.data) && <span className="ml-2 border border-borda-forte px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-400">JÁ SERVIDO</span>}</td>
                   <td className="whitespace-nowrap px-4 py-4 text-texto-secundario">{rotuloPeriodo(refeicao.periodo)}</td>
                   <td className="px-4 py-4 font-semibold text-texto-principal">{refeicao.nome || rotuloPeriodo(refeicao.periodo)}</td>
@@ -290,6 +297,8 @@ export default function PaginaGestaoRefeicoes() {
             <p className="mt-4 border-l-2 border-primaria bg-fundo px-3 py-2 text-xs text-texto-secundario">Horários fixos: manhã às 10h, almoço às 12h e tarde às 15h.</p>
             <label className="mt-4 block text-sm text-texto-secundario">Nome<input required minLength={2} maxLength={120} value={formulario.nome} onChange={(event) => definirFormulario({ ...formulario, nome: event.target.value })} className={classeCampo} placeholder="Ex.: Cuscuz com ovos" /></label>
             <label className="mt-4 block text-sm text-texto-secundario">Descrição<textarea required minLength={3} maxLength={500} rows={3} value={formulario.descricao} onChange={(event) => definirFormulario({ ...formulario, descricao: event.target.value })} className={`${classeCampo} resize-none`} placeholder="Descreva brevemente a refeição." /></label>
+            <label className="mt-4 block text-sm text-texto-secundario">URL da imagem <span className="text-texto-secundario/70">(opcional)</span><input type="url" maxLength={2048} pattern="https://.*" value={formulario.imagemUrl ?? ""} onChange={(event) => definirFormulario({ ...formulario, imagemUrl: event.target.value })} className={classeCampo} placeholder="URL direta ou link compartilhado do Google Drive" /><span className="mt-1.5 block text-xs text-texto-secundario/80">No Google Drive, permita o acesso a qualquer pessoa com o link.</span></label>
+            <ImagemRefeicao src={formulario.imagemUrl} nome={formulario.nome || "refeição"} className="mt-4 aspect-video w-full border border-borda" />
 
             {erro && <p className="mt-4 text-sm text-erro font-medium" role="alert">{erro}</p>}
             {mensagem && <p className="mt-4 inline-flex items-center gap-2 text-sm text-sucesso font-medium" role="status"><Check size={17} />{mensagem}</p>}

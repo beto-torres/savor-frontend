@@ -291,3 +291,43 @@ A aplicação conta com alternância dinâmica de temas entre **Dark** (tema ori
 ## Manutencao
 
 Antes de alterar o projeto, leia este arquivo. Ao criar, editar ou remover arquivos, acrescente um resumo objetivo ao historico, preservando os registros anteriores e sem incluir dados sensiveis.
+
+### 2026-09-21 - Página pública da equipe
+
+- Pedido: adicionar item de menu e apresentar 13 integrantes em cards criativos com foto, nome e informações.
+- Arquivos afetados: `src/app/page.tsx`, nova rota `src/app/equipe/page.tsx`, `public/equipe-retratos.png`, README e arquivos de contexto.
+- Decisões: os 13 perfis são explicitamente demonstrativos e facilmente substituíveis; uma prancha original de retratos ilustrados fictícios é recortada por CSS para manter estilo e carregamento consistentes; os cards incluem função, resumo e habilidades.
+- Validações: lint, TypeScript e inspeção visual responsiva nos temas claro e escuro.
+- Pendências: substituir nomes, textos e retratos quando os dados da equipe real forem fornecidos.
+
+### 2026-09-21 - Imagens opcionais das refeições
+
+- Pedido: exibir imagens opcionais nas refeições, com cadastro por URL e fallback visual.
+- Arquivos afetados: `src/components/ImagemRefeicao.tsx`, página inicial, painel, gestão de refeições, tipo auxiliar da gestão de avaliações, README e arquivos de contexto.
+- Decisões: componente reutilizável usa imagem HTML nativa para aceitar qualquer host HTTPS sem liberar origens no `next.config.ts`; ausência e falha de carregamento exibem fallback; cards públicos usam proporção 16:9 e a gestão mostra prévia e miniaturas.
+- Validações: lint, TypeScript e verificação visual responsiva nos temas claro e escuro.
+- Pendências: nenhuma funcional.
+
+### 2026-09-21 - Recuperação de senha aprovada por administrador
+
+- Pedido: criar recuperação de senha cuja ativação seja exclusiva do administrador.
+- Arquivos afetados: página inicial, gestão de usuários, README e arquivos de contexto.
+- Decisões: o modal público coleta CPF, nova senha e confirmação; informa que a ativação depende de aprovação; a gestão administrativa lista solicitações pendentes e oferece ações de ativar ou rejeitar.
+- Validações: lint, TypeScript, fluxo real da API e inspeção visual no navegador.
+- Pendências: nenhuma funcional.
+
+### 2026-09-21 - Modelo visual de data e hora no cardápio do painel
+
+- Pedido: aplicar o modelo `dd/MM`, divisor horizontal e horário `HHhMM` ao cardápio de hoje.
+- Arquivo afetado: `src/app/painel/page.tsx` e arquivos de contexto.
+- Decisão: data e hora formam um bloco compacto por refeição, com cores semânticas compatíveis com os temas e reorganização responsiva em telas pequenas.
+- Validação: lint, TypeScript e revisão das classes responsivas.
+- Pendências: nenhuma.
+
+### 2026-09-21 - Compactação do modelo de data e hora
+
+- Pedido: diminuir a fonte, aproximar data e horário e usar a mesma cor.
+- Arquivo afetado: `src/app/painel/page.tsx` e arquivos de contexto.
+- Decisão: bloco reduzido para fonte pequena, espaçamento de 0,25rem e azul secundário compartilhado com o rótulo “PROGRAMAÇÃO”.
+- Validação: lint e TypeScript.
+- Pendências: nenhuma.

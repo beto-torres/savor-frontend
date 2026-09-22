@@ -17,13 +17,23 @@ import {
   Utensils,
 } from "lucide-react";
 import { AlternadorTema } from "@/components/AlternadorTema";
+import { ImagemRefeicao } from "@/components/ImagemRefeicao";
 
 type Periodo = "manha" | "almoco" | "tarde";
-type RefeicaoPainel = { id: number; periodo: Periodo; horarioServico: string; nome: string; descricao: string };
+type RefeicaoPainel = { id: number; periodo: Periodo; horarioServico: string; nome: string; descricao: string; imagemUrl?: string | null };
 type CardapioHoje = { data: string; ehDiaLetivo: boolean; refeicoes: RefeicaoPainel[] };
 type AvaliacaoResumo = { servidoEm: string };
 const nomesPeriodo: Record<Periodo, string> = { manha: "Lanche da manhã", almoco: "Almoço", tarde: "Lanche da tarde" };
 const rotulosTipo = { administrador: "Administrador", cozinha: "Cozinha", aluno: "Aluno" };
+
+function formatarDataCurta(data?: string) {
+  if (!data) return "--/--";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(`${data.slice(0, 10)}T12:00:00Z`));
+}
 
 export default function PaginaPainel() {
   const router = useRouter();
@@ -100,9 +110,9 @@ export default function PaginaPainel() {
   return (
     <main className="min-h-screen bg-fundo text-texto-principal">
       <header className="border-b border-borda bg-header">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex w-full items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:max-w-7xl">
           <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="Voltar ao cardápio">
-            <Image src="/logo.jpg" alt="Logomarca Sabor Sync" width={56} height={56} priority className="size-14 shrink-0 border border-borda object-cover" />
+            <Image src="/logo.png" alt="Logomarca Sabor Sync" width={56} height={56} priority className="size-14 shrink-0 rounded-full border border-borda object-cover" />
             <span className="min-w-0 leading-tight">
               <strong className="block text-sm tracking-wide text-texto-principal">SABOR SYNC</strong>
               <span className="block truncate text-xs text-secundaria font-medium">Área do usuário</span>
@@ -120,7 +130,7 @@ export default function PaginaPainel() {
       </header>
 
       <section className="border-b border-borda bg-superficie">
-        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12">
+        <div className="mx-auto w-full px-5 py-10 sm:px-8 sm:py-12 lg:max-w-7xl">
           <p className="text-xs font-bold tracking-[0.18em] text-secundaria">PAINEL</p>
           <h1 className="mt-3 text-3xl font-semibold text-texto-principal sm:text-4xl">Olá, {usuarioAtual?.nome ?? "usuário"}!</h1>
           {usuarioAtual && <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-secundaria">Perfil: {rotulosTipo[usuarioAtual.tipo]}</p>}
@@ -128,7 +138,7 @@ export default function PaginaPainel() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl space-y-8 px-5 py-8 sm:px-8 sm:py-12">
+      <div className="mx-auto w-full space-y-8 px-5 py-8 sm:px-8 sm:py-12 lg:max-w-7xl">
         {usuarioAtual?.tipo === "aluno" && <section className="border-l-2 border-primaria bg-superficie p-6" aria-labelledby="regra-avaliacao">
           <div className="flex items-start gap-4"><div className="grid size-11 shrink-0 place-items-center bg-primaria/15 text-secundaria"><Star size={22} aria-hidden="true" /></div><div><p className="text-xs font-bold tracking-[0.16em] text-secundaria">SUA AVALIAÇÃO</p><h2 id="regra-avaliacao" className="mt-2 text-lg font-semibold text-texto-principal">Quando posso avaliar uma refeição?</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-texto-secundario">A avaliação fica disponível após o horário em que a refeição é servida e permanece aberta até o fim do mesmo dia. Refeições futuras ou de dias anteriores não podem ser avaliadas.</p><Link href="/" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-secundaria hover:underline"><MessageSquare size={17} />Ver refeições disponíveis para avaliação</Link></div></div>
         </section>}
@@ -190,10 +200,14 @@ export default function PaginaPainel() {
 
           <div className="mt-4 divide-y divide-borda border border-borda bg-superficie">
             {cardapioHoje?.refeicoes.map((refeicao) => (
-              <article key={refeicao.id} className="grid gap-2 p-5 sm:grid-cols-[6rem_11rem_1fr] sm:items-center">
-                <p className="text-xs font-bold tracking-wide text-secundaria">{refeicao.horarioServico.replace(":", "h")}</p>
+              <article key={refeicao.id} className="grid grid-cols-[4.5rem_1fr] gap-x-4 gap-y-3 p-5 sm:grid-cols-[5rem_11rem_6rem_1fr] sm:items-center">
+                <div className="w-14 text-center text-sm font-bold leading-none text-secundaria" aria-label={`${formatarDataCurta(cardapioHoje.data)} às ${refeicao.horarioServico.replace(":", "h")}`}>
+                  <p className="border-b border-secundaria pb-1">{formatarDataCurta(cardapioHoje.data)}</p>
+                  <p className="pt-1">{refeicao.horarioServico.replace(":", "h")}</p>
+                </div>
                 <h3 className="font-semibold text-texto-principal">{refeicao.nome}<span className="mt-1 block text-xs font-normal text-texto-secundario">{nomesPeriodo[refeicao.periodo]}</span></h3>
-                <p className="text-sm leading-6 text-texto-secundario">{refeicao.descricao}</p>
+                <ImagemRefeicao src={refeicao.imagemUrl} nome={refeicao.nome} className="col-span-2 aspect-[4/3] w-full border border-borda sm:col-span-1 sm:w-24" />
+                <p className="col-span-2 text-sm leading-6 text-texto-secundario sm:col-span-1">{refeicao.descricao}</p>
               </article>
             ))}
             {cardapioHoje && cardapioHoje.refeicoes.length === 0 && <p className="p-5 text-sm text-texto-secundario">Nenhuma refeição cadastrada para hoje.</p>}
