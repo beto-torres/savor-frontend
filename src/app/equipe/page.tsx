@@ -8,19 +8,19 @@ import { AlternadorTema } from "@/components/AlternadorTema";
 import { useAutenticacaoUsuario } from "@/lib/autenticacao";
 
 const integrantes = [
-  { nome: "João Gabriel", funcao: "Produto e estratégia", descricao: "Transforma necessidades da escola em prioridades claras para o produto.", habilidades: ["Produto", "Pesquisa"], imagem: "02" },
-  { nome: "Ellen Vitória", funcao: "Desenvolvimento frontend", descricao: "Constrói interfaces rápidas, acessíveis e agradáveis em qualquer dispositivo.", habilidades: ["React", "Acessibilidade"], imagem: "01" },
+  { nome: "João Gabriel", funcao: "Produto e estratégia", descricao: "Transforma necessidades da escola em prioridades claras para o produto.", habilidades: ["Produto", "Pesquisa"], imagem: "01" },
+  { nome: "Ellen Vitória", funcao: "Desenvolvimento frontend", descricao: "Constrói interfaces rápidas, acessíveis e agradáveis em qualquer dispositivo.", habilidades: ["React", "Acessibilidade"], imagem: "02" },
   { nome: "Claudiana Rakelly", funcao: "Design de experiência", descricao: "Cuida dos fluxos, protótipos e detalhes visuais que tornam o sistema simples.", habilidades: ["UX", "UI"], imagem: "03" },
-  { nome: "Bianca Felipe", funcao: "Desenvolvimento backend", descricao: "Conecta regras de negócio, autenticação e dados em uma API confiável.", habilidades: ["Node.js", "API"], imagem: "05" },
-  { nome: "Pablo Silva", funcao: "Dados e relatórios", descricao: "Organiza os dados e transforma avaliações em informações úteis para a equipe.", habilidades: ["PostgreSQL", "Análise"], imagem: "04" },
-  { nome: "Rafael Santos", funcao: "Infraestrutura", descricao: "Mantém os ambientes consistentes e simplifica a execução com contêineres.", habilidades: ["Docker", "DevOps"], imagem: "06" },
-  { nome: "Camila Oliveira", funcao: "Qualidade de software", descricao: "Explora cenários, previne regressões e protege a experiência dos usuários.", habilidades: ["Testes", "Qualidade"], imagem: "07" },
-  { nome: "João Pedro Costa", funcao: "Acessibilidade", descricao: "Garante navegação inclusiva com teclado, leitores de tela e bons contrastes.", habilidades: ["WCAG", "Inclusão"], imagem: "08" },
-  { nome: "Larissa Gomes", funcao: "Conteúdo e comunicação", descricao: "Escreve textos claros e aproxima o projeto da comunidade escolar.", habilidades: ["Conteúdo", "Comunicação"], imagem: "09" },
-  { nome: "Mateus Rocha", funcao: "Segurança da aplicação", descricao: "Revisa acessos, validações e fluxos para proteger contas e informações.", habilidades: ["Segurança", "Autenticação"], imagem: "10" },
-  { nome: "Isabela Martins", funcao: "Pesquisa com usuários", descricao: "Escuta estudantes e equipe da cozinha para orientar melhorias relevantes.", habilidades: ["Entrevistas", "Descoberta"], imagem: "11" },
-  { nome: "Pedro Henrique Alves", funcao: "Integrações", descricao: "Faz as diferentes partes do sistema conversarem de forma estável.", habilidades: ["Integração", "Arquitetura"], imagem: "12" },
-  { nome: "Yasmin Carvalho", funcao: "Documentação", descricao: "Registra decisões e cria materiais que ajudam todos a evoluir o projeto.", habilidades: ["Documentação", "Ensino"], imagem: "13" },
+  { nome: "Bianca Felipe", funcao: "Desenvolvimento backend", descricao: "Conecta regras de negócio, autenticação e dados em uma API confiável.", habilidades: ["Node.js", "API"], imagem: "04" },
+  { nome: "George Guilherme", funcao: "Dados e relatórios", descricao: "Organiza os dados e transforma avaliações em informações úteis para a equipe.", habilidades: ["PostgreSQL", "Análise"], imagem: "05" },
+  { nome: "Vitor Tales", funcao: "Infraestrutura", descricao: "Mantém os ambientes consistentes e simplifica a execução com contêineres.", habilidades: ["Docker", "DevOps"], imagem: "06" },
+  { nome: "Murilo Felipe", funcao: "Qualidade de software", descricao: "Explora cenários, previne regressões e protege a experiência dos usuários.", habilidades: ["Testes", "Qualidade"], imagem: "07" },
+  { nome: "José Arthur", funcao: "Acessibilidade", descricao: "Garante navegação inclusiva com teclado, leitores de tela e bons contrastes.", habilidades: ["WCAG", "Inclusão"], imagem: "08" },
+  { nome: "Alessandro Silva", funcao: "Conteúdo e comunicação", descricao: "Escreve textos claros e aproxima o projeto da comunidade escolar.", habilidades: ["Conteúdo", "Comunicação"], imagem: "09" },
+  { nome: "Kaua de Melo", funcao: "Segurança da aplicação", descricao: "Revisa acessos, validações e fluxos para proteger contas e informações.", habilidades: ["Segurança", "Autenticação"], imagem: "10" },
+  { nome: "Sandro Ricardo", funcao: "Pesquisa com usuários", descricao: "Escuta estudantes e equipe da cozinha para orientar melhorias relevantes.", habilidades: ["Entrevistas", "Descoberta"], imagem: "11" },
+  { nome: "Weslley Fernandes", funcao: "Integrações", descricao: "Faz as diferentes partes do sistema conversarem de forma estável.", habilidades: ["Integração", "Arquitetura"], imagem: "12" },
+  { nome: "Gustavo Ariel", funcao: "Documentação", descricao: "Registra decisões e cria materiais que ajudam todos a evoluir o projeto.", habilidades: ["Documentação", "Ensino"], imagem: "13" },
 ];
 
 export default function PaginaEquipe() {
@@ -107,7 +107,7 @@ export default function PaginaEquipe() {
               <div className="flex -space-x-3" aria-hidden="true">
                 {integrantes.slice(0, 5).map((integrante) => (
                   <div key={integrante.nome} className="relative size-12 overflow-hidden rounded-full border-2 border-fundo bg-superficie">
-                    <Image src={`/integrantes/${integrante.imagem}.png`} alt="" fill sizes="48px" className="object-cover" />
+                    <Image src={`/integrantes/${integrante.imagem}.jpeg`} alt="" fill sizes="48px" className="object-cover" />
                   </div>
                 ))}
                 <span className="relative grid size-12 place-items-center rounded-full border-2 border-fundo bg-primaria text-xs font-bold text-primaria-texto">+8</span>
@@ -119,13 +119,13 @@ export default function PaginaEquipe() {
       </section>
 
       <section className="mx-auto w-full px-5 py-10 sm:px-8 sm:py-14 lg:max-w-7xl" aria-labelledby="integrantes-title">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold tracking-[0.16em] text-secundaria">DESENVOLVEDORES</p><h2 id="integrantes-title" className="mt-2 text-2xl font-semibold">Conheça a equipe</h2></div><p className="text-xs text-texto-secundario">Perfis demonstrativos. (REMOVER DEPOIS)</p></div>
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold tracking-[0.16em] text-secundaria">DESENVOLVEDORES</p><h2 id="integrantes-title" className="mt-2 text-2xl font-semibold">Conheça a equipe</h2></div><p className="font-bold text-lg text-blue-400">ETE - Turma 3DSB</p></div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {integrantes.map((integrante, indice) => (
             <article key={integrante.nome} className="group overflow-hidden border border-borda bg-superficie transition hover:-translate-y-1 hover:border-borda-forte hover:shadow-xl hover:shadow-black/10">
               <div className="relative aspect-square overflow-hidden bg-fundo" role="img" aria-label={`Retrato ilustrado de ${integrante.nome}`}>
                 <Image
-                  src={`/integrantes/${integrante.imagem}.png`}
+                  src={`/integrantes/${integrante.imagem}.jpeg`}
                   alt=""
                   fill
                   sizes="(min-width: 1280px) 288px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
